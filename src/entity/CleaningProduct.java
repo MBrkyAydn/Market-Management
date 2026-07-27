@@ -16,6 +16,13 @@ private String usageArea;
         return getPrice()*0.10;
     }
 
+    @Override
+    public String toString() {
+        return "CleaningProduct{" +
+                "usageArea='" + usageArea + '\'' +
+                '}';
+    }
+
     public void setUsageArea(String usageArea) {
         this.usageArea = usageArea;
     }

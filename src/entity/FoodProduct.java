@@ -15,6 +15,13 @@ public class FoodProduct extends   Product{
         return getPrice()*0.10;
     }
 
+    @Override
+    public String toString() {
+        return "FoodProduct{" +
+                "expirationDate=" + expirationDate +
+                '}';
+    }
+
     public LocalDate getExpirationDate() {
         return expirationDate;
     }

@@ -12,6 +12,13 @@ private int warrantyPeriod;
         return getPrice()*0.20;
     }
 
+    @Override
+    public String toString() {
+        return "ElectronicProduct{" +
+                "warrantyPeriod=" + warrantyPeriod +
+                '}';
+    }
+
     public int getWarrantyPeriod() {
         return warrantyPeriod;
     }
