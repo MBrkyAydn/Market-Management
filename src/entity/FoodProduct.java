@@ -21,7 +21,6 @@ public class FoodProduct extends   Product{
                 "expirationDate=" + expirationDate +
                 '}';
     }
-
     public LocalDate getExpirationDate() {
         return expirationDate;
     }
