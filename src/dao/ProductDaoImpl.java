@@ -3,13 +3,59 @@ package dao;
 import entity.*;
 import util.DatabaseConnection;
 
-import javax.xml.crypto.Data;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProductDaoImpl implements ProductDao {
+
+
+    private Product mapToProduct(ResultSet resultSet) throws SQLException {
+        int idd = resultSet.getInt("id");
+        String barcode = resultSet.getString("barcode");
+        String name = resultSet.getString("name");
+        double price = resultSet.getDouble("price");
+        int stock = resultSet.getInt("stock");
+
+        Category category = Category.valueOf(resultSet.getString("category"));
+        switch (category) {
+            case FOOD:
+                return new FoodProduct(
+                        barcode,
+                        name,
+                        category,
+                        price,
+                        idd,
+                        stock,
+                        resultSet.getDate("expiration_date").toLocalDate());
+
+            case ELECTRONICS:
+                return new ElectronicProduct(
+                        barcode,
+                        name,
+                        category,
+                        price,
+                        idd,
+                        stock,
+                        resultSet.getInt("warranty_period")
+                );
+            case CLEANING:
+                return new CleaningProduct(
+                        barcode,
+                        name,
+                        category,
+                        price,
+                        idd,
+                        stock,
+                        resultSet.getString("usage_area"));
+
+            default:
+                throw new IllegalArgumentException("Unknown category.");
+        }
+    }
+
 
     @Override
     public void save(Product product) {
@@ -46,8 +92,34 @@ public class ProductDaoImpl implements ProductDao {
 
     @Override
     public void update(Product product) {
+     String sql ="UPDATE products  set barcode = ?, name = ?, category = ?, price = ?, stock = ? , expiration_date = ? ,warranty_period= ?, usage_area ? ,  where id = ?";
+try {Connection connection = DatabaseConnection.getConnection();
+PreparedStatement statement = connection.prepareStatement(sql);
+statement.setString(1,product.getBarcode());
+statement.setString(2,product.getName());
+statement.setString(3,product.getCategory().name());
+statement.setDouble(4,product.getPrice());
+statement.setInt(5,product.getStock());
+    if (product instanceof FoodProduct food) {
+statement.setDate(6,Date.valueOf(food.getExpirationDate()));
+statement.setNull(7, Types.INTEGER);
+statement.setNull(8, Types.VARCHAR);
+
+    }else if  (product instanceof ElectronicProduct electronic) {
+        statement.setNull(6,Types.DATE);
+        statement.setInt(7,electronic.getWarrantyPeriod());
+        statement.setNull(8,Types.INTEGER);
+    }
+    else if (product instanceof CleaningProduct cleaning) {
+        statement.setNull(6,Types.DATE);
+        statement.setNull(7,Types.INTEGER);
+        statement.setString(8,cleaning.getUsageArea());
 
     }
+}catch (SQLException e){}
+
+    }
+
 
     @Override
     public void delete(int id) {
@@ -64,54 +136,14 @@ public class ProductDaoImpl implements ProductDao {
 
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                int idd = resultSet.getInt("id");
-                String barcode = resultSet.getString("barcode");
-                String name = resultSet.getString("name");
-
-                double price = resultSet.getDouble("price");
-                int stock = resultSet.getInt("stock");
-                Category category = Category.valueOf(resultSet.getString("category"));
-                switch (category) {
-                    case FOOD:
-                        return new FoodProduct(
-                                barcode,
-                                name,
-                                category,
-                                price,
-                                id,
-                                stock,
-                                resultSet.getDate("expiration_date").toLocalDate());
-
-                    case ELECTRONICS:
-                        return new ElectronicProduct(
-                                barcode,
-                                name,
-                                category,
-                                price,
-                                id,
-                                stock,
-                                resultSet.getInt("warranty_period")
-                        );
-                    case CLEANING:
-                        return new CleaningProduct(
-                                barcode,
-                                name,
-                                category,
-                                price,
-                                id,
-                                stock,
-                                resultSet.getString("usage_area")
-                        );
-
-                }
-
+                return mapToProduct(resultSet);
             }
 
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        throw new IllegalArgumentException("Product not found.");
     }
 
     @Override
@@ -123,24 +155,16 @@ public class ProductDaoImpl implements ProductDao {
             Connection connection = DatabaseConnection.getConnection();
             statement = connection.prepareStatement(sql);
             ResultSet resultSet = statement.executeQuery();
-            while(resultSet.next()){
-                int idd = resultSet.getInt("id");
-                String barcode = resultSet.getString("barcode");
-                String name = resultSet.getString("name");
-                double price = resultSet.getDouble("price");
-                int stock = resultSet.getInt("stock");
-                Category category = Category.valueOf(resultSet.getString("category"));
-                switch (category) {
-                    case FOOD: products.add(new FoodProduct(barcode,name,category,price,idd,stock,resultSet.getDate("expiration_date").toLocalDate()));
-                        break;
-                        case ELECTRONICS: products.add(new ElectronicProduct(barcode,name,category,price,idd,stock,resultSet.getInt("warranty_period")));break;
-                    case CLEANING:products.add(new CleaningProduct(barcode,name,category,price,idd,stock,resultSet.getString("usage_area")));break;
+            while (resultSet.next()) {
+                mapToProduct(resultSet);
 
-                }return products;
             }
-        } catch (SQLException e) {
 
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        return List.of();
+        return products;
     }
+
+
 }
