@@ -1,5 +1,6 @@
 package dao;
 
+import com.mysql.cj.exceptions.DataReadException;
 import entity.*;
 import util.DatabaseConnection;
 
@@ -56,6 +57,28 @@ public class ProductDaoImpl implements ProductDao {
         }
     }
 
+    private void fillStatement(PreparedStatement statement, Product product) throws SQLException {
+        statement.setString(1, product.getBarcode());
+        statement.setString(2, product.getName());
+        statement.setString(3, product.getCategory().name());
+        statement.setDouble(4, product.getPrice());
+        statement.setInt(5, product.getStock());
+        if (product instanceof FoodProduct food) {
+            statement.setDate(6, Date.valueOf(food.getExpirationDate()));
+            statement.setNull(7, Types.INTEGER);
+            statement.setNull(8, Types.VARCHAR);
+
+        } else if (product instanceof ElectronicProduct electronic) {
+            statement.setNull(6, Types.DATE);
+            statement.setInt(7, electronic.getWarrantyPeriod());
+            statement.setNull(8, Types.INTEGER);
+        } else if (product instanceof CleaningProduct cleaning) {
+            statement.setNull(6, Types.DATE);
+            statement.setNull(7, Types.INTEGER);
+            statement.setString(8, cleaning.getUsageArea());
+
+        }
+    }
 
     @Override
     public void save(Product product) {
@@ -67,20 +90,8 @@ public class ProductDaoImpl implements ProductDao {
         try {
             Connection connection = DatabaseConnection.getConnection();
             PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setString(1, product.getBarcode());
-            statement.setString(2, product.getName());
-            statement.setString(3, product.getCategory().name());
+            fillStatement(statement, product);
 
-            statement.setDouble(4, product.getPrice());
-
-            statement.setInt(5, product.getStock());
-            if (product instanceof FoodProduct food) {
-                statement.setDate(6, Date.valueOf(food.getExpirationDate()));
-
-                statement.setNull(7, Types.INTEGER);
-
-                statement.setNull(8, Types.VARCHAR);
-            }
             statement.executeUpdate();
             System.out.println("Product added successfully.");
 
@@ -92,37 +103,34 @@ public class ProductDaoImpl implements ProductDao {
 
     @Override
     public void update(Product product) {
-     String sql ="UPDATE products  set barcode = ?, name = ?, category = ?, price = ?, stock = ? , expiration_date = ? ,warranty_period= ?, usage_area ? ,  where id = ?";
-try {Connection connection = DatabaseConnection.getConnection();
-PreparedStatement statement = connection.prepareStatement(sql);
-statement.setString(1,product.getBarcode());
-statement.setString(2,product.getName());
-statement.setString(3,product.getCategory().name());
-statement.setDouble(4,product.getPrice());
-statement.setInt(5,product.getStock());
-    if (product instanceof FoodProduct food) {
-statement.setDate(6,Date.valueOf(food.getExpirationDate()));
-statement.setNull(7, Types.INTEGER);
-statement.setNull(8, Types.VARCHAR);
-
-    }else if  (product instanceof ElectronicProduct electronic) {
-        statement.setNull(6,Types.DATE);
-        statement.setInt(7,electronic.getWarrantyPeriod());
-        statement.setNull(8,Types.INTEGER);
-    }
-    else if (product instanceof CleaningProduct cleaning) {
-        statement.setNull(6,Types.DATE);
-        statement.setNull(7,Types.INTEGER);
-        statement.setString(8,cleaning.getUsageArea());
-
-    }
-}catch (SQLException e){}
+        String sql = "UPDATE products  set barcode = ?, name = ?, category = ?, price = ?, stock = ? , expiration_date = ? ,warranty_period= ?, usage_area = ?   where id = ?";
+        try {
+            Connection connection = DatabaseConnection.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql);
+            fillStatement(statement, product);
+            statement.setInt(9, product.getId());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
     }
 
 
     @Override
     public void delete(int id) {
+String sql = "DELETE FROM products where id = ?";
+try {
+    Connection connection = DatabaseConnection.getConnection();
+    PreparedStatement statement = connection.prepareStatement(sql);
+    statement.setInt(1, id);
+    statement.executeUpdate();
+    System.out.println("Product deleted successfully.");
+
+
+}catch (SQLException e){
+    e.printStackTrace();
+}
 
     }
 
@@ -156,7 +164,7 @@ statement.setNull(8, Types.VARCHAR);
             statement = connection.prepareStatement(sql);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                mapToProduct(resultSet);
+              products.add(mapToProduct(resultSet));
 
             }
 
