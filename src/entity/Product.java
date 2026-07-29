@@ -36,12 +36,34 @@ public abstract class Product {
         stock += amount;
     }
 
-    public void decreaseStock(int amount) throws InstantiationException {
-        if (amount > stock || amount <= 0) {
-            throw new InstantiationException("\"Insufficient stock.\"");
-        }stock-=amount;
-    }
+    public void decreaseStock(int amount) {
 
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero.");
+        }
+
+        if (amount > stock) {
+            throw new IllegalArgumentException("Insufficient stock.");
+        }
+
+        stock -= amount;
+    }
+    public void changePrice(double price) {
+
+        if (price <= 0) {
+            throw new IllegalArgumentException("Price must be greater than zero.");
+        }
+
+        this.price = price;
+    }
+    public void changeName(String name) {
+
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name cannot be empty.");
+        }
+
+        this.name = name;
+    }
     public void setName(String name) {
         this.name = name;
     }
